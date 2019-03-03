@@ -76,8 +76,6 @@ let indices = [];
 let compactBuyArr = [];
 let compactSellArr = [];
 
-//remember to remove walletForToken stuffs
-//check that when balances are changing that wont cause error in later tests
 
 contract('KyberFundReserve', function(accounts) {
   it("should init globals. init ConversionRates Inst, init tokens and add to pricing inst. set basic data per token.", async function () {
@@ -94,8 +92,7 @@ contract('KyberFundReserve', function(accounts) {
 
         currentBlock = priceUpdateBlock = await Helper.getCurrentBlock();
 
-//        console.log("current block: " + currentBlock);
-        //init contracts
+        //deploy conversion rates
         convRatesInst = await ConversionRates.new(admin, {});
 
         //set pricing general parameters
@@ -111,6 +108,7 @@ contract('KyberFundReserve', function(accounts) {
             await convRatesInst.enableTokenTrade(token.address);
         }
 
+        //check balances
         assert.equal(tokens.length, numTokens, "bad number tokens");
 
         let result = await convRatesInst.addOperator(operator);
@@ -158,28 +156,30 @@ contract('KyberFundReserve', function(accounts) {
        }
    });
 
-   //it shoudl init reserve and mockfundwallet here, send token/ether balance here instead
-
    it("should init reserve and fundWallet and send tokens/ether to fundWallet", async function () {
-      //fix constructor for mock fund wallet deploy mock fund wallet and then reserve -- add to reserve constructor
 
         //set fund wallet here
         fundWalletInst = await MockFundWallet.new("60", "60", "60", "60");
 
+        //set reserve
         reserveInst = await Reserve.new(network, convRatesInst.address, fundWalletInst.address, admin);
 
+        //set reserve address in fund wallet
         await fundWalletInst.setReserve(reserveInst.address);
 
+        //set contract addresses in reserve
         await reserveInst.setContracts(network, convRatesInst.address, 0);
 
+        //add opperator/alerter in reserve
         await reserveInst.addOperator(operator);
         await reserveInst.addAlerter(alerter);
+
+        //set reserve address in conv rates
         await convRatesInst.setReserveAddress(reserveInst.address);
         for (let i = 0; i < numTokens; ++i) {
             await reserveInst.approveWithdrawAddress(tokenAdd[i],accounts[0],true);
         }
 
-        //note may not have enough ether/tokens for the 2 rounds of testing
         //send tokens and ethers
         //set reserve balance. 10000 wei ether + per token 1000 wei ether value according to base price.
         let fundWalletEtherInit = 5000 * 2;
@@ -202,11 +202,11 @@ contract('KyberFundReserve', function(accounts) {
         }
     });
 
-    //should test reverted scenario for set contracts call
     it("should test reverted scenario for set contracts call.", async function () {
         //legal call
         await reserveInst.setContracts(network, convRatesInst.address, 0, {from:admin});
 
+        //reverts due to 0 address
         try {
             await reserveInst.setContracts(0, convRatesInst.address, 0, {from:admin});
             assert(false, "throw was expected in line above.")
@@ -222,11 +222,11 @@ contract('KyberFundReserve', function(accounts) {
         }
     });
 
-    //test reverted scenario for set fund wallet call
     it("should test reverted scenario for set Fund Wallet call.", async function () {
         //legal call
         await reserveInst.setFundWallet(fundWalletInst.address, {from:admin});
 
+        //reverts due to 0 addresses
         try {
             await reserveInst.setFundWallet(0, {from:admin});
             assert(false, "throw was expected in line above.")
@@ -235,14 +235,13 @@ contract('KyberFundReserve', function(accounts) {
         }
     });
 
-    //adminP tests jump to time in first unit test (getConversion Rates, withdraw, trade(try buy and sell) should all fail or return 0)
-    it("should return 0 conversion rates for ether and token in adminP (admin period).", async function() {
-      //jump forward time maybe?
+    it("should return 0 conversion rates for ether and token in adminP (admin period). Rationale: opperational events shouldn't occur", async function() {
       let tokenInd = 3;
       let token = tokens[tokenInd]; //choose some token
       let amountWei = 2 * 1;
       let amountTwei = 25 * 1;
 
+      //call rates
       let buyRate = await reserveInst.getConversionRate(ethAddress, tokenAdd[tokenInd], amountWei, currentBlock);
       let sellRate = await reserveInst.getConversionRate(tokenAdd[tokenInd], ethAddress, amountTwei, currentBlock);
 
@@ -253,7 +252,7 @@ contract('KyberFundReserve', function(accounts) {
 
     });
 
-    it("should fail withdraw for both ether and token in adminP (admin period).", async function(){
+    it("should fail withdraw for both ether and token in adminP (admin period). Rationale: opperational events shouldn't occur", async function(){
       let tokenInd = 1;
       let amount = 10;
       let token = tokens[tokenInd];
@@ -284,7 +283,7 @@ contract('KyberFundReserve', function(accounts) {
 
     });
 
-    it("should fail buy in adminP (admin period).", async function () {
+    it("should fail buy in adminP (admin period). Rationale: opperational events shouldn't occur", async function () {
       let tokenInd = 3;
       let token = tokens[tokenInd]; //choose some token
       let amountWei = 2 * 1;
@@ -301,7 +300,7 @@ contract('KyberFundReserve', function(accounts) {
 
     });
 
-    it("should fail sell in adminP (admin period).", async function () {
+    it("should fail sell in adminP (admin period). Rationale: opperational events shouldn't occur", async function () {
       let tokenInd = 3;
       let token = tokens[tokenInd]; //choose some token
       let amountTwei = 25 * 1;
@@ -324,16 +323,16 @@ contract('KyberFundReserve', function(accounts) {
       }
     });
 
-    //raiseP tests jump to time in first unit test(getBalance, getConversion Rates, withdraw, trade should all fail or return 0)
-    it("should return 0 conversion rates for ether and token in raiseP (raise period).", async function() {
-      //jump forward time!!
+    it("should return 0 conversion rates for ether and token in raiseP (raise period). Rationale: opperational events shouldn't occur", async function() {
       let tokenInd = 3;
       let token = tokens[tokenInd]; //choose some token
       let amountWei = 2 * 1;
       let amountTwei = 25 * 1;
 
+      //jump forward time - 60min
       await Helper.advanceTimeAndBlock(3600);
 
+      //get rates
       let buyRate = await reserveInst.getConversionRate(ethAddress, tokenAdd[tokenInd], amountWei, currentBlock);
       let sellRate = await reserveInst.getConversionRate(tokenAdd[tokenInd], ethAddress, amountTwei, currentBlock);
 
@@ -344,7 +343,7 @@ contract('KyberFundReserve', function(accounts) {
 
     });
 
-    it("should fail withdraw for both ether and token in raiseP (raise period).", async function(){
+    it("should fail withdraw for both ether and token in raiseP (raise period). Rationale: opperational events shouldn't occur", async function(){
       let tokenInd = 1;
       let amount = 10;
       let token = tokens[tokenInd];
@@ -375,11 +374,12 @@ contract('KyberFundReserve', function(accounts) {
 
     });
 
-    it("should fail buy in raiseP (raise period).", async function () {
+    it("should fail buy in raiseP (raise period). Rationale: opperational events shouldn't occur", async function () {
       let tokenInd = 3;
       let token = tokens[tokenInd]; //choose some token
       let amountWei = 2 * 1;
 
+      //get rate
       let buyRate = await reserveInst.getConversionRate(ethAddress, tokenAdd[tokenInd], amountWei, currentBlock);
 
       //try tade should fail
@@ -392,7 +392,7 @@ contract('KyberFundReserve', function(accounts) {
 
     });
 
-    it("should fail sell in raiseP (raise period).", async function () {
+    it("should fail sell in raiseP (raise period). Rationale: while raising trades should fail", async function () {
       let tokenInd = 3;
       let token = tokens[tokenInd]; //choose some token
       let amountTwei = 25 * 1;
@@ -415,14 +415,12 @@ contract('KyberFundReserve', function(accounts) {
       }
     });
 
-    //opperateP jump to time tests in first unit test
-    //small buys -- success
-    it("should perform small buy and check: balances, rate is expected rate. In opperateP (opperational period)", async function () {
-      //jump forward time!!
+    it("should perform small buy successfully and check: balances, rate is expected rate. In opperateP (opperational period)", async function () {
        let tokenInd = 3;
        let token = tokens[tokenInd]; //choose some token
        let amountWei = 2 * 1;
 
+       //jump to opperateP
        await Helper.advanceTimeAndBlock(3600);
 
        //verify base rate
@@ -457,8 +455,7 @@ contract('KyberFundReserve', function(accounts) {
        assert.equal(reportedBalance.valueOf(), reserveTokenBalance[tokenInd].valueOf(), "bad token balance on reserve");
    });
 
-    //small sell
-    it("should perform small sell and check: balances, rate is expected rate. In opperateP (opperational period)", async function () {
+    it("should perform small sell successfully and check: balances, rate is expected rate. In opperateP (opperational period)", async function () {
         let tokenInd = 3;
         let token = tokens[tokenInd]; //choose some token
         let amountTwei = 25 * 1;
@@ -509,7 +506,6 @@ contract('KyberFundReserve', function(accounts) {
         assert.equal(reportedBalance.valueOf(), reserveTokenBalance[tokenInd].valueOf(), "bad token balance on reserve");
     });
 
-    //should verify trade success when validation disabled
     it("should verify trade success when validation disabled.", async function () {
       let tokenInd = 3;
       let token = tokens[tokenInd]; //choose some token
@@ -561,7 +557,6 @@ contract('KyberFundReserve', function(accounts) {
       assert.equal(reportedBalance.valueOf(), reserveTokenBalance[tokenInd].valueOf(), "bad token balance on reserve");
     });
 
-    //should test sell trade reverted without token approved. -- maybe don't repeat
     it("should test sell trade reverted without token approved.", async function () {
         let tokenInd = 2;
         let token = tokens[tokenInd]; //choose some token
@@ -571,7 +566,7 @@ contract('KyberFundReserve', function(accounts) {
 
         await token.transfer(network, amount);
 
-        //
+        //reverts due to non-approval
         try {
             await reserveInst.trade(tokenAdd[tokenInd], amount, ethAddress, user2, sellRate, true, {from:network});
             assert(false, "throw was expected in line above.")
@@ -584,7 +579,6 @@ contract('KyberFundReserve', function(accounts) {
         await reserveInst.trade(tokenAdd[tokenInd], amount, ethAddress, user2, sellRate, true, {from:network});
     });
 
-    //should test trade reverted when trade disabled -- maybe don't repeat
     it("should test trade reverted when trade disabled .", async function () {
         let tokenInd = 2;
         let token = tokens[tokenInd]; //choose some token
@@ -596,7 +590,8 @@ contract('KyberFundReserve', function(accounts) {
         await token.approve(reserveInst.address, amount, {from: network});
 
         await reserveInst.disableTrade({from:alerter});
-        //
+
+        //reverts as trade is disabled
         try {
             await reserveInst.trade(tokenAdd[tokenInd], amount, ethAddress, user2, sellRate, true, {from:network});
             assert(false, "throw was expected in line above.")
@@ -609,7 +604,6 @@ contract('KyberFundReserve', function(accounts) {
         await reserveInst.trade(tokenAdd[tokenInd], amount, ethAddress, user2, sellRate, true, {from:network});
     });
 
-    //should test trade reverted when conversion rate 0
     it("should test trade reverted when conversion rate 0.", async function () {
         let tokenInd = 2;
         let token = tokens[tokenInd]; //choose some token
@@ -620,7 +614,7 @@ contract('KyberFundReserve', function(accounts) {
         await token.transfer(network, amount);
         await token.approve(reserveInst.address, amount, {from: network});
 
-        //
+        //conv rate set to 0
         try {
             await reserveInst.trade(tokenAdd[tokenInd], amount, ethAddress, user2, 0, true, {from:network});
             assert(false, "throw was expected in line above.")
@@ -631,7 +625,6 @@ contract('KyberFundReserve', function(accounts) {
         await reserveInst.trade(tokenAdd[tokenInd], amount, ethAddress, user2, sellRate, true, {from:network});
     });
 
-    //should test trade reverted when dest amount is 0
     it("should test trade reverted when dest amount is 0.", async function () {
         let tokenInd = 1;
         let token = tokens[tokenInd]; //choose some token
@@ -643,7 +636,7 @@ contract('KyberFundReserve', function(accounts) {
         await token.transfer(network, (amountLow*1 + amountHigh*1));
         await token.approve(reserveInst.address, (amountLow*1 + amountHigh*1), {from: network});
 
-        //
+        //low src amount --> 0 dest
         try {
             await reserveInst.trade(tokenAdd[tokenInd], amountLow, ethAddress, user2, sellRate, true, {from:network});
             assert(false, "throw was expected in line above.")
@@ -651,12 +644,12 @@ contract('KyberFundReserve', function(accounts) {
             assert(Helper.isRevertErrorMessage(e), "expected throw but got: " + e);
         }
 
+        //see correct trade wuth higher src amount
         await reserveInst.trade(tokenAdd[tokenInd], amountHigh, ethAddress, user2, sellRate, true, {from:network});
         reserveTokenBalance[tokenInd] = reserveTokenBalance[tokenInd]*1 + amountHigh*1;
         reserveTokenImbalance[tokenInd] = reserveTokenImbalance[tokenInd]-(amountHigh);
     });
 
-    //should test buy trade reverted when not sending correct ether value
     it("should test buy trade reverted when not sending correct ether value.", async function () {
         let tokenInd = 4;
         let token = tokens[tokenInd]; //choose some token
@@ -676,7 +669,6 @@ contract('KyberFundReserve', function(accounts) {
         await reserveInst.trade(ethAddress, amount, tokenAdd[tokenInd], user2, rate, true, {from:network, value:amount});
     });
 
-    //should test trade reverted when not sent from network
     it("should test trade reverted when not sent from network.", async function () {
         let tokenInd = 4;
         let token = tokens[tokenInd]; //choose some token
@@ -695,7 +687,6 @@ contract('KyberFundReserve', function(accounts) {
         await reserveInst.trade(ethAddress, amount, tokenAdd[tokenInd], user2, rate, true, {from:network, value:amount});
     });
 
-    //should test trade reverted when sending ether value with sell trade
     it("should test trade reverted when sending ether value with sell trade.", async function () {
        let tokenInd = 1;
        let token = tokens[tokenInd]; //choose some token
@@ -706,7 +697,7 @@ contract('KyberFundReserve', function(accounts) {
        await token.transfer(network, amount);
        await token.approve(reserveInst.address, amount, {from: network});
 
-       //
+       // trade with ether value > 0
        try {
            await reserveInst.trade(tokenAdd[tokenInd], amount, ethAddress, user2, sellRate, true, {from:network, value:3});
            assert(false, "throw was expected in line above.")
@@ -714,12 +705,12 @@ contract('KyberFundReserve', function(accounts) {
            assert(Helper.isRevertErrorMessage(e), "expected throw but got: " + e);
        }
 
+       //correct trade
        await reserveInst.trade(tokenAdd[tokenInd], amount, ethAddress, user2, sellRate, true, {from:network, value: 0});
        reserveTokenBalance[tokenInd] = reserveTokenBalance[tokenInd]*1 + amount*1;
        reserveTokenImbalance[tokenInd] = reserveTokenImbalance[tokenInd]-(amount);
     });
 
-    //should approve withdraw address and withdraw. token and ether.
     it("should approve withdraw address and withdraw; token and ether. In opperateP (opperational period)", async function () {
         let tokenInd = 1;
         let amount = 10;
@@ -747,7 +738,6 @@ contract('KyberFundReserve', function(accounts) {
         assert.equal(reportedBalance.valueOf(), expectedFundWalletBalanceWei, "bad eth balance on reserve");
     });
 
-    //should test reverted scenarios for withdraw -- maybe don't repeat
     it ("should test reverted scenarios for withdraw", async function() {
         let tokenInd = 1;
         let amount = 10;
@@ -780,7 +770,6 @@ contract('KyberFundReserve', function(accounts) {
         }
     });
 
-    //should test get dest qty
     it ("should test get dest qty", async function() {
         let srcQty = 100;
         let rate = precision.div(2); //1 to 2. in precision units
@@ -799,7 +788,6 @@ contract('KyberFundReserve', function(accounts) {
         assert.equal(expectedDestQty.valueOf(), reportedDstQty.valueOf(), "unexpected dst qty");
     });
 
-    //should test get src qty
     it ("should test get src qty", async function() {
         let rate = precision.div(2); //1 to 2. in precision units
 
@@ -818,7 +806,6 @@ contract('KyberFundReserve', function(accounts) {
         assert.equal(expectedSrcQty.valueOf(), reportedSrcQty.valueOf(), "unexpected src qty");
     });
 
-    //should test get conversion rate options
     it ("should test get conversion rate options", async function() {
         let tokenInd = 3;
         let amountTwei = 3;
@@ -851,7 +838,6 @@ contract('KyberFundReserve', function(accounts) {
         assert.equal(sellRate.valueOf(), expectedRate.valueOf(), "unexpected rate.");
     });
 
-    //should test get conversion rate return 0 when sanity rate is lower the calculated rate
     it ("should test get conversion rate return 0 when sanity rate is lower the calculated rate", async function() {
         let tokenInd = 3;
         let token = tokens[tokenInd]; //choose some token
@@ -888,10 +874,8 @@ contract('KyberFundReserve', function(accounts) {
         await reserveInst.setContracts(network, convRatesInst.address, 0, {from:admin});
     });
 
-    //should zero reserve balance and see that get rate returns zero when not enough dest balance eth/token
     it("should zero reserve balance and see that get rate returns zero when not enough dest balance", async function() {
 
-      //fix so that token balance is returned to the reserve
         let tokenInd = 1;
         let amountTwei = maxPerBlockImbalance - 1;
         let token = tokens[tokenInd];
@@ -909,20 +893,17 @@ contract('KyberFundReserve', function(accounts) {
         rate = await reserveInst.getConversionRate(ethAddress, tokenAdd[tokenInd], srcQty, currentBlock);
         assert.equal(rate.valueOf(), 0, "expected rate 0");
 
-        //send funds back and then check again for non zero
-        //send balance back NEED TO CHECK
+        //send funds back
         await token.transfer(fundWalletInst.address, balance);
         let balance2 = await reserveInst.getBalance(tokenAdd[tokenInd]);
     });
 
-    //liquidP tests include withdraw-- can withdraw token
-    //small buys -- success
     it("should perform small buy and check: balances, rate is expected rate. In liquidP (liquidation period)", async function () {
-      //jump forward time!!
        let tokenInd = 3;
        let token = tokens[tokenInd]; //choose some token
        let amountWei = 2 * 1;
 
+       //jump time 60min to liquidP
        await Helper.advanceTimeAndBlock(3600);
 
        let startBal = await token.balanceOf(user1);
@@ -936,8 +917,6 @@ contract('KyberFundReserve', function(accounts) {
 
        //check correct rate calculated
        assert.equal(buyRate.valueOf(), expectedRate.valueOf(), "unexpected rate.");
-
-       //empty user1
 
        //perform trade
        await reserveInst.trade(ethAddress, amountWei, tokenAdd[tokenInd], user1, buyRate, true, {from:network, value:amountWei});
@@ -960,7 +939,6 @@ contract('KyberFundReserve', function(accounts) {
        assert.equal(reportedBalance.valueOf(), reserveTokenBalance[tokenInd].valueOf(), "bad token balance on reserve");
    });
 
-    //small sell -- should fail need to edit expected behaviour to this
     it("should fail sell in liquidP (liquidation period). Rationale: we don't want token balance to increase", async function () {
       let tokenInd = 3;
       let token = tokens[tokenInd]; //choose some token
@@ -995,11 +973,8 @@ contract('KyberFundReserve', function(accounts) {
 
       //check correct rate calculated
       assert.equal(sellRate.valueOf(), 0, "unexpected rate.");
-
     });
 
-
-    //should approve withdraw address and withdraw. token.
     it("should approve withdraw address and withdraw token in liquidP (liquidation period)", async function () {
         let tokenInd = 1;
         let amount = 10;
@@ -1014,14 +989,12 @@ contract('KyberFundReserve', function(accounts) {
         let reportedBalance = await reserveInst.getBalance(tokenAdd[tokenInd]);
         assert.equal(reportedBalance.valueOf(), reserveTokenBalance[tokenInd].valueOf(), "bad token balance on reserve");
 
-
-        //doing this ebcause testing multiple withdraws
+        //doing this because testing multiple withdraws
         let endBalWD = await token.balanceOf(withDrawAddress);
         let wDAmount = await (endBalWD - startBalWD);
         assert.equal(wDAmount, amount, "bad token balance on withdraw address");
     });
 
-    //withdraw ether should fail
     it("should fail withdraw for ether in liquidP (liquidation period). Rationale: we only want token balance to decrease", async function(){
       let tokenInd = 1;
       let amount = 10;
@@ -1041,7 +1014,6 @@ contract('KyberFundReserve', function(accounts) {
 
     });
 
-    //claimP tests jump to time(getBalance, getConversion Rates, withdraw, trade should all fail or return 0)
     it("should return 0 conversion rates for ether and token in claimP (claim period). Rationale: fund no longer opperating", async function() {
       //jump forward time!!
       let tokenInd = 3;
@@ -1049,6 +1021,7 @@ contract('KyberFundReserve', function(accounts) {
       let amountWei = 2 * 1;
       let amountTwei = 25 * 1;
 
+      //jump to claimP
       await Helper.advanceTimeAndBlock(3600);
 
       let buyRate = await reserveInst.getConversionRate(ethAddress, tokenAdd[tokenInd], amountWei, currentBlock);
@@ -1132,7 +1105,6 @@ contract('KyberFundReserve', function(accounts) {
       }
     });
 
-    //should test can't init this contract with empty contracts (address 0)
     it("should test can't init this contract with empty contracts (address 0).", async function () {
       //jump forward time!!
         let reserve;

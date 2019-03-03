@@ -278,7 +278,7 @@ contract FundWallet {
         TokenWithdraw(token, amount, sendTo);
     }
 
-    /// @notice Funtion for admin to withdraw ERC20 token while fund is opperating.
+    /// @notice Funtion for admin to withdraw ether token while fund is opperating.
     /// @dev Only available to admin and in the opperating period
     function withdrawEther(uint amount, address sendTo) external timePeriodsAreSet onlyAdmin inOpperateP {
         sendTo.transfer(amount);
