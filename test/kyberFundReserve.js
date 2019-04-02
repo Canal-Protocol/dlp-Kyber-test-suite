@@ -12,7 +12,7 @@ const truffleAssert = require('truffle-assertions');
 const precisionUnits = (new BigNumber(10).pow(18));
 const ethAddress = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
 const precision = new BigNumber(10).pow(18);
-
+const nullAddress = '0x0000000000000000000000000000000000000000';
 //balances
 let expectedFundWalletBalanceWei = 0;
 let reserveTokenBalance = [];
@@ -93,7 +93,7 @@ contract('KyberFundReserve', function(accounts) {
         currentBlock = priceUpdateBlock = await Helper.getCurrentBlock();
 
         //deploy conversion rates
-        convRatesInst = await ConversionRates.new(admin, {});
+        convRatesInst = await ConversionRates.new(admin);
 
         //set pricing general parameters
         await convRatesInst.setValidRateDurationInBlocks(validRateDurationInBlocks);
@@ -123,8 +123,8 @@ contract('KyberFundReserve', function(accounts) {
        for (i = 0; i < numTokens; ++i) {
            tokensPerEther = Math.floor(new BigNumber(precisionUnits*((i + 1) * 3)));
            ethersPerToken = Math.floor(new BigNumber(precisionUnits/((i + 1) * 3)));
-           baseBuyRate.push(tokensPerEther.valueOf());
-           baseSellRate.push(ethersPerToken.valueOf());
+           baseBuyRate.push(tokensPerEther.toString());
+           baseSellRate.push(ethersPerToken.toString());
        }
        assert.equal(baseBuyRate.length, tokens.length);
        assert.equal(baseSellRate.length, tokens.length);
@@ -168,7 +168,7 @@ contract('KyberFundReserve', function(accounts) {
         await fundWalletInst.setReserve(reserveInst.address);
 
         //set contract addresses in reserve
-        await reserveInst.setContracts(network, convRatesInst.address, 0);
+        await reserveInst.setContracts(network, convRatesInst.address, nullAddress);
 
         //add opperator/alerter in reserve
         await reserveInst.addOperator(operator);
@@ -204,18 +204,18 @@ contract('KyberFundReserve', function(accounts) {
 
     it("should test reverted scenario for set contracts call.", async function () {
         //legal call
-        await reserveInst.setContracts(network, convRatesInst.address, 0, {from:admin});
+        await reserveInst.setContracts(network, convRatesInst.address, nullAddress, {from:admin});
 
         //reverts due to 0 address
         try {
-            await reserveInst.setContracts(0, convRatesInst.address, 0, {from:admin});
+            await reserveInst.setContracts(nullAddress, convRatesInst.address, nullAddress, {from:admin});
             assert(false, "throw was expected in line above.")
         } catch(e){
             assert(Helper.isRevertErrorMessage(e), "expected throw but got: " + e);
         }
 
         try {
-            await reserveInst.setContracts(network, 0, 0, {from:admin});
+            await reserveInst.setContracts(network, nullAddress, nullAddress, {from:admin});
             assert(false, "throw was expected in line above.")
         } catch(e){
             assert(Helper.isRevertErrorMessage(e), "expected throw but got: " + e);
@@ -228,7 +228,7 @@ contract('KyberFundReserve', function(accounts) {
 
         //reverts due to 0 addresses
         try {
-            await reserveInst.setFundWallet(0, {from:admin});
+            await reserveInst.setFundWallet(nullAddress, {from:admin});
             assert(false, "throw was expected in line above.")
         } catch(e){
             assert(Helper.isRevertErrorMessage(e), "expected throw but got: " + e);
@@ -871,7 +871,7 @@ contract('KyberFundReserve', function(accounts) {
         await sanityRate.setSanityRates(tokens2, rates2, {from: operator});
         nowRate = await reserveInst.getConversionRate(tokenAdd[tokenInd], ethAddress, amount, currentBlock);
         assert(nowRate.valueOf() > 0, "expected valid rate.");
-        await reserveInst.setContracts(network, convRatesInst.address, 0, {from:admin});
+        await reserveInst.setContracts(network, convRatesInst.address, nullAddress, {from:admin});
     });
 
     it("should zero reserve balance and see that get rate returns zero when not enough dest balance", async function() {
@@ -1110,28 +1110,28 @@ contract('KyberFundReserve', function(accounts) {
         let reserve;
 
         try {
-           reserve = await Reserve.new(network, convRatesInst.address, fundWalletInst.address, 0);
+           reserve = await Reserve.new(network, convRatesInst.address, fundWalletInst.address, nullAddress);
            assert(false, "throw was expected in line above.")
         } catch(e){
            assert(Helper.isRevertErrorMessage(e), "expected throw but got: " + e);
         }
 
         try {
-           reserve =  await Reserve.new(network, 0, fundWalletInst.address, admin);
+           reserve =  await Reserve.new(network, nullAddress, fundWalletInst.address, admin);
            assert(false, "throw was expected in line above.")
         } catch(e){
            assert(Helper.isRevertErrorMessage(e), "expected throw but got: " + e);
         }
 
         try {
-           reserve =  await Reserve.new(0, convRatesInst.address, fundWalletInst.address, admin);
+           reserve =  await Reserve.new(nullAddress, convRatesInst.address, fundWalletInst.address, admin);
            assert(false, "throw was expected in line above.")
         } catch(e){
            assert(Helper.isRevertErrorMessage(e), "expected throw but got: " + e);
         }
 
         try {
-           reserve =  await Reserve.new(network, convRatesInst.address, 0, admin);
+           reserve =  await Reserve.new(network, convRatesInst.address, nullAddress, admin);
            assert(false, "throw was expected in line above.")
         } catch(e){
            assert(Helper.isRevertErrorMessage(e), "expected throw but got: " + e);
@@ -1141,21 +1141,21 @@ contract('KyberFundReserve', function(accounts) {
         reserve = await Reserve.new(network, convRatesInst.address, fundWalletInst.address, admin);
 
         try {
-           await reserve.setContracts(0, convRatesInst.address, 0);
+           await reserve.setContracts(nullAddress, convRatesInst.address, nullAddress);
            assert(false, "throw was expected in line above.")
         } catch(e){
            assert(Helper.isRevertErrorMessage(e), "expected throw but got: " + e);
         }
 
         try {
-           await reserve.setContracts(network, 0, 0);
+           await reserve.setContracts(network, nullAddress, nullAddress);
            assert(false, "throw was expected in line above.")
         } catch(e){
            assert(Helper.isRevertErrorMessage(e), "expected throw but got: " + e);
         }
 
         //sanity rates can currently be empty
-        await reserve.setContracts(network, convRatesInst.address, 0);
+        await reserve.setContracts(network, convRatesInst.address, nullAddress);
     });
 });
 
