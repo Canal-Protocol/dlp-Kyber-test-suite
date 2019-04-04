@@ -19,6 +19,7 @@ let token;
 const precisionUnits = (new BigNumber(10).pow(18));
 const ethAddress = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
 const precision = new BigNumber(10).pow(18);
+const nullAddress = '0x0000000000000000000000000000000000000000';
 
 contract('FundWallet', function(accounts) {
 
@@ -34,7 +35,7 @@ contract('FundWallet', function(accounts) {
       newAdmin = accounts[8];
 
       //deploy fund wallet
-      fundWalletInst = await FundWallet.new(admin, backupAdmin, {});
+      fundWalletInst = await FundWallet.new(admin, backupAdmin);
 
       //deploy token
       token = await TestToken.new("test", "tst", 18);
@@ -43,12 +44,21 @@ contract('FundWallet', function(accounts) {
     it("Should test time period failiures - prior to times being set", async function () {
       let corContAmount = 500;
       let adminStake = 1000;
+      let adminCarry = 2000;
       let etherWDAmt = 10;
       let tokenWDAmt = 10;
       let tokAmount = 10;
       let ethAmount = 10;
 
       //all the functions which should not be accessible at this stake in time should fail - the bellow calls are correct only times are wrong
+      try {
+        await fundWalletInst.setFundScheme(adminStake,adminCarry, {from: admin});
+        assert(false, "throw was expected in line above.")
+      }
+      catch(e) {
+        assert(Helper.isRevertErrorMessage(e), "expected throw but got: " + e);
+      }
+
       try {
           await fundWalletInst.setReserve(reserve, {from:admin});
           assert(false, "throw was expected in line above.")
@@ -181,7 +191,16 @@ contract('FundWallet', function(accounts) {
 
       //success
       await fundWalletInst.setTimePeriods("60", "60", "60", "60", {from:admin});
-    });
+
+      //should fail if trying to set time periods again
+      try {
+        await fundWalletInst.setTimePeriods("60", "60", "60", "60", {from:admin});
+        assert(false, "throw was expected in line above.")
+      }
+      catch(e){
+        assert(Helper.isRevertErrorMessage(e), "expected throw but got: " + e);
+      }
+    });  
 
     it("Should test time period failiures - this is the admin period (adminP)", async function () {
       let corContAmount = 500;
@@ -1245,7 +1264,7 @@ contract('FundWallet', function(accounts) {
     it("Should test failed init of Fund Wallet", async function () {
       //0 address failiures
       try {
-          fundWalletInst = await FundWallet.new(0, backupAdmin, {});
+          fundWalletInst = await FundWallet.new(nullAddress, backupAdmin);
           assert(false, "throw was expected in line above.")
       }
       catch(e){
@@ -1253,7 +1272,7 @@ contract('FundWallet', function(accounts) {
       }
 
       try {
-          fundWalletInst = await FundWallet.new(admin, 0, {});
+          fundWalletInst = await FundWallet.new(admin, nullAddress);
           assert(false, "throw was expected in line above.")
       }
       catch(e){
@@ -1261,7 +1280,7 @@ contract('FundWallet', function(accounts) {
       }
 
       try {
-          fundWalletInst = await FundWallet.new(0, 0, {});
+          fundWalletInst = await FundWallet.new(nullAddress, nullAddress);
           assert(false, "throw was expected in line above.")
       }
       catch(e){
@@ -1289,7 +1308,7 @@ contract('FundWallet - aborted fund', function(accounts) {
     let corContAmount = 500;
 
     //deploy fund wallet
-    fundWalletInst = await FundWallet.new(admin, backupAdmin, {});
+    fundWalletInst = await FundWallet.new(admin, backupAdmin);
 
     //deploy token
     token = await TestToken.new("test", "tst", 18);
@@ -1422,7 +1441,7 @@ contract('FundWallet - profitable scenario', function(accounts) {
     let profit = 1000;
 
     //deploy fund wallet
-    fundWalletInst = await FundWallet.new(admin, backupAdmin, {});
+    fundWalletInst = await FundWallet.new(admin, backupAdmin);
 
     //deploy token
     token = await TestToken.new("test", "tst", 18);
