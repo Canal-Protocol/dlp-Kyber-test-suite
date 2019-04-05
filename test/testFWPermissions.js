@@ -28,7 +28,7 @@ contract('Test FundWallet Permissions/Modifiers', function(accounts) {
       outsideAcc = accounts[4];
 
       //deploy TestFWPermissions contract
-      testFWPermInst = await TestFWPerm.new(admin, backupAdmin, reserve, contributor, {});
+      testFWPermInst = await TestFWPerm.new(admin, backupAdmin, reserve, contributor);
 
     });
 
