@@ -11,7 +11,7 @@ This repo is for testing the DLP infrastructure - that is the **Kyber Fund Reser
 Install the following verison of truffle.
 
 ```
-sudo npm install -g truffle@5.0.0-beta.1
+sudo npm install -g truffle@latest
 ```
 
 4. Install the rest of the NPM packages
