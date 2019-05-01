@@ -59,10 +59,10 @@ contract FundWallet is FwPermissions {
     /// @param _liquidP The amount of time the admin has to liquidate the fund into base currency - Ether. In minutes for testing.
     function setTimePeriods(uint _adminP, uint _raiseP, uint _opperateP, uint _liquidP) public onlyAdmin timePeriodsNotSet {
         start = now;
-        adminP = _adminP * (60 seconds);
-        raiseP = _raiseP * (60 seconds);
-        opperateP = _opperateP * (60 seconds);
-        liquidP = _liquidP * (60 seconds);
+        adminP = _adminP * (24 hours);
+        raiseP = _raiseP * (24 hours);
+        opperateP = _opperateP * (24 hours);
+        liquidP = _liquidP * (24 hours);
         timePeriodsSet = true;
     }
 

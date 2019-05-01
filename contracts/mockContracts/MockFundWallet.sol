@@ -24,10 +24,10 @@ contract MockFundWallet {
     /// @notice Constructor, initialises admin wallets.
     function MockFundWallet(uint _adminP, uint _raiseP, uint _opperateP, uint _liquidP) public {
         start = now;
-        adminP = _adminP * (60 seconds);
-        raiseP = _raiseP * (60 seconds);
-        opperateP = _opperateP * (60 seconds);
-        liquidP = _liquidP * (60 seconds);
+        adminP = _adminP * (24 hours);
+        raiseP = _raiseP * (24 hours);
+        opperateP = _opperateP * (24 hours);
+        liquidP = _liquidP * (24 hours);
     }
 
     function setReserve(address _reserve) public {

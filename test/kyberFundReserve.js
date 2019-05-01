@@ -159,7 +159,7 @@ contract('KyberFundReserve', function(accounts) {
    it("should init reserve and fundWallet and send tokens/ether to fundWallet", async function () {
 
         //set fund wallet here
-        fundWalletInst = await MockFundWallet.new("60", "60", "60", "60");
+        fundWalletInst = await MockFundWallet.new("2", "2", "2", "2");
 
         //set reserve
         reserveInst = await Reserve.new(network, convRatesInst.address, fundWalletInst.address, admin);
@@ -330,7 +330,7 @@ contract('KyberFundReserve', function(accounts) {
       let amountTwei = 25 * 1;
 
       //jump forward time - 60min
-      await Helper.advanceTimeAndBlock(3600);
+      await Helper.advanceTimeAndBlock(172850);
 
       //get rates
       let buyRate = await reserveInst.getConversionRate(ethAddress, tokenAdd[tokenInd], amountWei, currentBlock);
@@ -421,7 +421,7 @@ contract('KyberFundReserve', function(accounts) {
        let amountWei = 2 * 1;
 
        //jump to opperateP
-       await Helper.advanceTimeAndBlock(3600);
+       await Helper.advanceTimeAndBlock(172850);
 
        //verify base rate
        let buyRate = await reserveInst.getConversionRate(ethAddress, tokenAdd[tokenInd], amountWei, currentBlock);
@@ -904,7 +904,7 @@ contract('KyberFundReserve', function(accounts) {
        let amountWei = 2 * 1;
 
        //jump time 60min to liquidP
-       await Helper.advanceTimeAndBlock(3600);
+       await Helper.advanceTimeAndBlock(172850);
 
        let startBal = await token.balanceOf(user1);
 
@@ -1022,7 +1022,7 @@ contract('KyberFundReserve', function(accounts) {
       let amountTwei = 25 * 1;
 
       //jump to claimP
-      await Helper.advanceTimeAndBlock(3600);
+      await Helper.advanceTimeAndBlock(172850);
 
       let buyRate = await reserveInst.getConversionRate(ethAddress, tokenAdd[tokenInd], amountWei, currentBlock);
       let sellRate = await reserveInst.getConversionRate(tokenAdd[tokenInd], ethAddress, amountTwei, currentBlock);

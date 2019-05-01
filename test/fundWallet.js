@@ -182,7 +182,7 @@ contract('FundWallet', function(accounts) {
     it("Should set time periods (also checks failiures for this function)", async function () {
       //failed fund wallet set time periods -- non admin
       try {
-          await fundWalletInst.setTimePeriods("60", "60", "60", "60", {from:outsideAcc});
+          await fundWalletInst.setTimePeriods("2", "2", "2", "2", {from:outsideAcc});
           assert(false, "throw was expected in line above.")
       }
       catch(e){
@@ -190,17 +190,17 @@ contract('FundWallet', function(accounts) {
       }
 
       //success
-      await fundWalletInst.setTimePeriods("60", "60", "60", "60", {from:admin});
+      await fundWalletInst.setTimePeriods("2", "2", "2", "2", {from:admin});
 
       //should fail if trying to set time periods again
       try {
-        await fundWalletInst.setTimePeriods("60", "60", "60", "60", {from:admin});
+        await fundWalletInst.setTimePeriods("2", "2", "2", "2", {from:admin});
         assert(false, "throw was expected in line above.")
       }
       catch(e){
         assert(Helper.isRevertErrorMessage(e), "expected throw but got: " + e);
       }
-    });  
+    });
 
     it("Should test time period failiures - this is the admin period (adminP)", async function () {
       let corContAmount = 500;
@@ -385,7 +385,7 @@ contract('FundWallet', function(accounts) {
       let corAdminStake = 1000;
 
       //3650 - excess of 50secs to ensure we are comfortably in time period
-      await Helper.advanceTimeAndBlock(3650);
+      await Helper.advanceTimeAndBlock(172850);
 
       let balanceInit = await Helper.getBalancePromise(fundWalletInst.address);
       assert.equal(balanceInit, 0, "initial balance incorrect (not 0)")
@@ -589,7 +589,7 @@ contract('FundWallet', function(accounts) {
 
     it("Should jump time to opperateP and test withdrawals, check balances", async function () {
       //3650 - excess of 50secs to ensure we are comfortable in time period
-      await Helper.advanceTimeAndBlock(3650);
+      await Helper.advanceTimeAndBlock(172850);
       let tokenInitBal = 100;
       let etherWDAmt = 10;
       let tokenWDAmt = 10;
@@ -822,7 +822,7 @@ contract('FundWallet', function(accounts) {
     it("Should jump time to liquidP and pull token in liquidP and check balances", async function () {
       let tokAmount = 10;
       //3650 - excess of 50 secs to ensure we are comfortably int ime period
-      await Helper.advanceTimeAndBlock(3650);
+      await Helper.advanceTimeAndBlock(172850);
 
       let tokenBal = await token.balanceOf(fundWalletInst.address);
 
@@ -984,7 +984,7 @@ contract('FundWallet', function(accounts) {
 
     it("Should logEndBal", async function () {
       //3650 - additional 50secs to ensure we are in time period
-      await Helper.advanceTimeAndBlock(3650);
+      await Helper.advanceTimeAndBlock(172850);
 
       //call
       await fundWalletInst.logEndBal();
@@ -1314,7 +1314,7 @@ contract('FundWallet - aborted fund', function(accounts) {
     token = await TestToken.new("test", "tst", 18);
 
     //set times
-    await fundWalletInst.setTimePeriods("60", "60", "60", "60", {from:admin});
+    await fundWalletInst.setTimePeriods("2", "2", "2", "2", {from:admin});
 
     //set performance and admin stake
     await fundWalletInst.setFundScheme(egAdminStake, egAdminCarry, {from:admin});
@@ -1327,7 +1327,7 @@ contract('FundWallet - aborted fund', function(accounts) {
     await fundWalletInst.addContributor(contributor2, {from:admin});
 
     //jump to raiseP
-    await Helper.advanceTimeAndBlock(3650);
+    await Helper.advanceTimeAndBlock(172850);
 
     //admin deposit
     await fundWalletInst.adminDeposit({from:admin, value:egAdminStake});
@@ -1447,7 +1447,7 @@ contract('FundWallet - profitable scenario', function(accounts) {
     token = await TestToken.new("test", "tst", 18);
 
     //set time periods
-    await fundWalletInst.setTimePeriods("60", "60", "60", "60", {from:admin});
+    await fundWalletInst.setTimePeriods("2", "2", "2", "2", {from:admin});
 
     //set admin stake and performance fee
     await fundWalletInst.setFundScheme(egAdminStake, egAdminCarry, {from:admin});
@@ -1460,7 +1460,7 @@ contract('FundWallet - profitable scenario', function(accounts) {
     await fundWalletInst.addContributor(contributor2, {from:admin});
 
     //jump to raiseP
-    await Helper.advanceTimeAndBlock(3650);
+    await Helper.advanceTimeAndBlock(172850);
 
     //admin deposit
     await fundWalletInst.adminDeposit({from:admin, value:egAdminStake});
@@ -1470,18 +1470,18 @@ contract('FundWallet - profitable scenario', function(accounts) {
     await fundWalletInst.contributorDeposit({from:contributor2, value:corContAmount});
 
     //jump to opperateP
-    await Helper.advanceTimeAndBlock(3650);
+    await Helper.advanceTimeAndBlock(172850);
 
     //send profit to fund wallet
     await Helper.sendEtherWithPromise(outsideAcc, fundWalletInst.address, profit);
 
     //jump to liquidP
-    await Helper.advanceTimeAndBlock(3650);
+    await Helper.advanceTimeAndBlock(172850);
     });
 
     it("Should log end balance and check balances", async function () {
       //jump to claim P
-      await Helper.advanceTimeAndBlock(3650);
+      await Helper.advanceTimeAndBlock(172850);
 
       //log end balance
       await fundWalletInst.logEndBal();
